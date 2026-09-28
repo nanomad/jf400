@@ -435,7 +435,7 @@ fn draw_help(buf: &mut Buffer, body: Rect) {
         "",
         "Function keys",
         "  F3 Exit   F4 Search   F5 Refresh   F6 Pause   F7 Previous   F8 Next",
-        "  F9 Volume down   F10 Volume up   F11 Now playing   F12 Back",
+        "  F9 Volume down   F10 Volume up   F11 Now playing   F12 or Esc Back",
         "",
         "Commands",
         "  SEARCH text  QUEUE  NOW  PAUSE  NEXT  PREV  STOP  VOL n  MENU  SIGNOFF  EXIT",

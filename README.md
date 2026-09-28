@@ -61,7 +61,7 @@ Long lists load in pages of 200 as you scroll.
 | F6 / F7 / F8 | Pause / Previous / Next |
 | F9 / F10 | Volume down / up |
 | F11 | Now playing |
-| F12 | Back |
+| F12 or Esc | Back (Esc first clears typed input) |
 
 **Commands:** `SEARCH text`, `QUEUE`, `NOW`, `CONTINUE`, `NEXTUP`, `LATEST`, `PAUSE`, `NEXT`, `PREV`, `STOP`, `VOL n`, `MENU`, `SIGNOFF`, `EXIT`.
 

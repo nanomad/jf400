@@ -807,8 +807,13 @@ impl App {
             KeyCode::Home => v.sel = 0,
             KeyCode::End => v.sel = len.saturating_sub(1),
             KeyCode::Esc => {
-                v.opts.clear();
-                self.cmd.clear();
+                // First Esc clears what you typed; Esc on a clean screen goes back.
+                if v.opts.is_empty() && !has_cmd {
+                    self.back();
+                } else {
+                    v.opts.clear();
+                    self.cmd.clear();
+                }
             }
             KeyCode::Backspace => {
                 if has_cmd {
