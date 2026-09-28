@@ -4,6 +4,18 @@ A Jellyfin terminal client with an IBM AS/400 (5250) look and feel. Music and vi
 
 Green on black, numbered menus, subfile-style lists with an `Opt` column, a `===>` command line, and an F-key bar.
 
+## Screenshots
+
+Mock data, rendered from the real UI code.
+
+| | |
+|---|---|
+| ![Sign on](docs/signon.png) | ![Main menu](docs/menu.png) |
+| ![Albums](docs/albums.png) | ![Tracks](docs/tracks.png) |
+| ![Continue watching](docs/continue.png) | ![Queue](docs/queue.png) |
+
+![Now playing](docs/now-playing.png)
+
 ## Requirements
 
 - Rust (2024 edition)

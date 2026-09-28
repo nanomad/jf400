@@ -58,6 +58,8 @@ struct Reported {
 const PROGRESS_EVERY: Duration = Duration::from_secs(10);
 
 pub struct App {
+    #[cfg(test)]
+    pub mock_state: Option<PlayerState>,
     media: Option<Media>,
     reporter: Option<Sender<(Client, Report)>>,
     reporter_thread: Option<std::thread::JoinHandle<()>>,
@@ -109,6 +111,8 @@ impl App {
             insecure: client.cfg.insecure,
         };
         App {
+            #[cfg(test)]
+            mock_state: None,
             media: Media::new(),
             reporter: Some(rtx),
             reporter_thread: Some(reporter_thread),
@@ -132,6 +136,10 @@ impl App {
     }
 
     pub fn player_state(&self) -> Option<PlayerState> {
+        #[cfg(test)]
+        if self.mock_state.is_some() {
+            return self.mock_state.clone();
+        }
         self.player.as_ref().map(|p| p.snapshot())
     }
 

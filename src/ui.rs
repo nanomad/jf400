@@ -279,7 +279,7 @@ fn draw_list(buf: &mut Buffer, app: &mut App, body: Rect) {
 
     let header = format!(
         "Opt  {} {} {} {}",
-        fit("Name", name_w),
+        fit("Name", name_w - 1),
         fit("Type", kind_w),
         fit("Detail", det_w),
         format!("{:>time_w$}", "Length")
@@ -475,5 +475,214 @@ mod tests {
             .collect();
         app.queue_view.opts.insert(1, '4');
         println!("{}", dump(&mut app));
+    }
+}
+
+#[cfg(test)]
+mod screenshots {
+    use super::*;
+    use crate::api::{Client, Query};
+    use crate::app::ListView;
+    use crate::config::Config;
+    use crate::player::PlayerState;
+    use ratatui::{Terminal, backend::TestBackend};
+    use std::collections::HashMap;
+    use std::fmt::Write;
+
+    const CW: f32 = 10.0;
+    const CH: f32 = 21.0;
+
+    fn hex(c: Color, default: &str) -> String {
+        match c {
+            Color::Rgb(r, g, b) => format!("#{r:02x}{g:02x}{b:02x}"),
+            _ => default.to_string(),
+        }
+    }
+
+    fn svg(app: &mut App, w: u16, h: u16) -> String {
+        let mut t = Terminal::new(TestBackend::new(w, h)).unwrap();
+        t.draw(|f| draw(f, app)).unwrap();
+        let b = t.backend().buffer();
+        let (pw, ph) = (w as f32 * CW + 24.0, h as f32 * CH + 24.0);
+        let mut o = String::new();
+        let _ = write!(o, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{pw}\" height=\"{ph}\" viewBox=\"0 0 {pw} {ph}\">");
+        let _ = write!(o, "<rect width=\"100%\" height=\"100%\" rx=\"8\" fill=\"#000\"/>");
+        let _ = write!(o, "<g font-family=\"Liberation Mono, DejaVu Sans Mono, monospace\" font-size=\"16.6\" xml:space=\"preserve\">");
+        for y in 0..h {
+            // Group horizontal runs that share a style.
+            let mut x = 0;
+            while x < w {
+                let c0 = &b[(x, y)];
+                let key = (c0.fg, c0.bg, c0.modifier);
+                let mut end = x + 1;
+                while end < w {
+                    let c = &b[(end, y)];
+                    if (c.fg, c.bg, c.modifier) != key {
+                        break;
+                    }
+                    end += 1;
+                }
+                let text: String = (x..end).map(|i| b[(i, y)].symbol().to_string()).collect();
+                let (mut fg, mut bg) = (hex(c0.fg, "#3dff5a"), hex(c0.bg, "#000000"));
+                if c0.modifier.contains(Modifier::REVERSED) {
+                    std::mem::swap(&mut fg, &mut bg);
+                }
+                let px = 12.0 + x as f32 * CW;
+                let py = 12.0 + y as f32 * CH;
+                let len = (end - x) as f32 * CW;
+                if bg != "#000000" {
+                    let _ = write!(o, "<rect x=\"{px}\" y=\"{py}\" width=\"{len}\" height=\"{CH}\" fill=\"{bg}\"/>");
+                }
+                if !text.trim().is_empty() || c0.modifier.contains(Modifier::UNDERLINED) {
+                    let esc = text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+                    let mut extra = String::new();
+                    if c0.modifier.contains(Modifier::BOLD) {
+                        extra.push_str(" font-weight=\"bold\"");
+                    }
+                    if c0.modifier.contains(Modifier::UNDERLINED) {
+                        extra.push_str(" text-decoration=\"underline\"");
+                    }
+                    if c0.modifier.contains(Modifier::DIM) {
+                        extra.push_str(" opacity=\"0.55\"");
+                    }
+                    let _ = write!(
+                        o,
+                        "<text x=\"{px}\" y=\"{}\" fill=\"{fg}\" textLength=\"{len}\" lengthAdjust=\"spacingAndGlyphs\"{extra}>{esc}</text>",
+                        py + CH - 5.0
+                    );
+                }
+                x = end;
+            }
+        }
+        o.push_str("</g></svg>");
+        o
+    }
+
+    fn item(kind: &str, name: &str) -> Item {
+        Item { id: name.into(), name: name.into(), kind: kind.into(), ..Default::default() }
+    }
+
+    fn track(n: u32, name: &str, secs: u64) -> Item {
+        Item {
+            index_number: Some(n),
+            artists: vec!["Massive Attack".into()],
+            album: Some("Mezzanine".into()),
+            run_time_ticks: Some(secs * 10_000_000),
+            ..item("Audio", name)
+        }
+    }
+
+    fn view(title: &str, items: Vec<Item>, sel: usize) -> ListView {
+        let total = items.len();
+        ListView {
+            id: 1,
+            title: title.into(),
+            query: Some(Query::Views),
+            items,
+            sel,
+            top: 0,
+            opts: HashMap::new(),
+            loading: false,
+            more_loading: false,
+            total,
+        }
+    }
+
+    fn app() -> App {
+        let cfg = Config {
+            server: "https://media.example.org".into(),
+            user: "gio".into(),
+            token: "x".into(),
+            ..Default::default()
+        };
+        let mut a = App::new(Client::new(cfg));
+        a.screen = Screen::Menu;
+        a
+    }
+
+    fn playing(a: &mut App, index: i64, pos: f64, dur: f64, paused: bool) {
+        a.mock_state = Some(PlayerState { pos, dur, paused, index, volume: 80.0, count: 5, idle: false });
+    }
+
+    #[test]
+    #[ignore]
+    fn generate() {
+        let tracks = vec![
+            track(1, "Angel", 379),
+            track(2, "Risingson", 298),
+            track(3, "Teardrop", 330),
+            track(4, "Inertia Creeps", 356),
+            track(5, "Exchange", 251),
+            track(6, "Dissolved Girl", 366),
+            track(7, "Man Next Door", 355),
+            track(8, "Black Milk", 380),
+            track(9, "Mezzanine", 356),
+            track(10, "Group Four", 491),
+            track(11, "(Exchange)", 252),
+        ];
+        let (w, h) = (100, 28);
+        std::fs::create_dir_all("docs").unwrap();
+        let save = |name: &str, a: &mut App| std::fs::write(format!("docs/{name}.svg"), svg(a, w, h)).unwrap();
+
+        let mut a = app();
+        a.screen = Screen::SignOn;
+        a.signon.fields = ["https://media.example.org".into(), "gio".into(), "secret".into()];
+        a.signon.focus = 2;
+        a.client.cfg.token.clear();
+        save("signon", &mut a);
+
+        let mut a = app();
+        a.cmd = "".into();
+        save("menu", &mut a);
+
+        let mut a = app();
+        let albums: Vec<Item> = [
+            ("Blue Lines", 1991), ("Protection", 1994), ("Mezzanine", 1998),
+            ("100th Window", 2003), ("Heligoland", 2010), ("Ritual Spirit", 2016),
+        ]
+        .iter()
+        .map(|(n, y)| Item {
+            artists: vec!["Massive Attack".into()],
+            production_year: Some(*y),
+            ..item("MusicAlbum", n)
+        })
+        .collect();
+        a.stack.push(view("Albums: Massive Attack", albums, 2));
+        a.stack[0].opts.insert(2, '1');
+        a.stack[0].opts.insert(4, '2');
+        a.screen = Screen::List;
+        playing(&mut a, 2, 101.0, 330.0, false);
+        a.queue = tracks.clone();
+        save("albums", &mut a);
+
+        let mut a = app();
+        a.stack.push(view("Mezzanine", tracks.clone(), 3));
+        a.screen = Screen::List;
+        save("tracks", &mut a);
+
+        let mut a = app();
+        let vids = vec![
+            Item { series_name: Some("Severance".into()), parent_index_number: Some(2), index_number: Some(4), run_time_ticks: Some(3_120_000_000_0), ..item("Episode", "Woe's Hollow") },
+            Item { production_year: Some(1982), run_time_ticks: Some(7_020_000_000_0), ..item("Movie", "Blade Runner") },
+            Item { series_name: Some("The Bear".into()), parent_index_number: Some(3), index_number: Some(1), run_time_ticks: Some(2_040_000_000_0), ..item("Episode", "Tomorrow") },
+            Item { production_year: Some(1979), run_time_ticks: Some(6_960_000_000_0), ..item("Movie", "Alien") },
+        ];
+        a.stack.push(view("Continue Watching", vids, 0));
+        a.screen = Screen::List;
+        save("continue", &mut a);
+
+        let mut a = app();
+        a.queue = tracks[..6].to_vec();
+        a.screen = Screen::Queue;
+        a.queue_view.sel = 3;
+        a.queue_view.opts.insert(4, '4');
+        playing(&mut a, 2, 101.0, 330.0, false);
+        save("queue", &mut a);
+
+        let mut a = app();
+        a.queue = tracks.clone();
+        a.screen = Screen::Now;
+        playing(&mut a, 2, 101.0, 330.0, false);
+        save("now-playing", &mut a);
     }
 }
