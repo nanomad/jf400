@@ -73,4 +73,4 @@ Long lists load in pages of 200 as you scroll.
 
 ## License
 
-Not yet chosen.
+MIT. See [LICENSE](LICENSE).
