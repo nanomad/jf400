@@ -135,8 +135,12 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     put(buf, 1, 0, &title, st(WHITE), w);
     let sys_x = w.saturating_sub(sys.chars().count() as u16 + 2);
     put(buf, sys_x, 0, &sys, st(WHITE), w);
-    let now = chrono::Local::now();
-    let stamp = format!("{}  {}", app.client.cfg.user.to_uppercase(), now.format("%d/%m/%y  %H:%M:%S"));
+    // Tests use a fixed clock so generated screenshots are reproducible.
+    #[cfg(test)]
+    let when = "28/09/26  20:15:42".to_string();
+    #[cfg(not(test))]
+    let when = chrono::Local::now().format("%d/%m/%y  %H:%M:%S").to_string();
+    let stamp = format!("{}  {when}", app.client.cfg.user.to_uppercase());
     let stamp_x = w.saturating_sub(stamp.chars().count() as u16 + 2);
     put(buf, stamp_x, 1, &stamp, st(GREEN), w);
 

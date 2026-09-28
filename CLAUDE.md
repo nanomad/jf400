@@ -7,7 +7,7 @@ Jellyfin terminal client in Rust (ratatui) with an AS/400 5250 look. Plays throu
 - Build: `cargo build`
 - Run: `cargo run --release` (needs a real TTY, `mpv`, and a Jellyfin server)
 - Render check: `cargo test screens -- --nocapture` draws sign-on, menu, and queue screens into a test buffer and prints them. Use it to check layout without a server.
-- Screenshots: `cargo test generate -- --ignored` writes `docs/*.svg` from mock data. Convert with `rsvg-convert -z 1 docs/x.svg -o docs/x.png`, keep the PNGs, delete the SVGs. Regenerate after UI changes.
+- Screenshots: `scripts/screenshots.sh` regenerates `docs/*.png` from mock data (needs `rsvg-convert`). Run it after any change to `src/ui.rs` and commit the PNGs.
 
 ## Layout
 
