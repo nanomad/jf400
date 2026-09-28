@@ -108,6 +108,10 @@ impl Player {
         {
             p.send(json!({ "command": ["observe_property", i + 1, name] }));
         }
+        // In the mpv window, q would quit the whole process. Make it just stop playback.
+        for key in ["q", "Q"] {
+            p.cmd(vec!["keybind".into(), key.into(), "stop".into()]);
+        }
         Ok(p)
     }
 
@@ -188,6 +192,11 @@ impl Player {
     }
     pub fn remove(&mut self, index: usize) {
         self.cmd(vec!["playlist-remove".into(), (index as i64).into()]);
+    }
+
+    /// False once the mpv process has exited (crash, or closed by the user).
+    pub fn alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
     }
 
     pub fn snapshot(&self) -> PlayerState {

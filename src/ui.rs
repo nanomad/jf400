@@ -108,8 +108,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let w = area.width;
     let h = area.height;
 
-    let np_row = h.saturating_sub(4);
-    let msg_row = h.saturating_sub(3);
+    // Bottom rows, top to bottom: now-playing strip, message, command label, command, F-keys.
+    let np_row = h.saturating_sub(5);
+    let msg_row = h.saturating_sub(4);
     let cmd_row = h.saturating_sub(2);
     let key_row = h.saturating_sub(1);
 

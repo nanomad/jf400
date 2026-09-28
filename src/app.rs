@@ -242,6 +242,9 @@ impl App {
 
     /// Called every loop: reports start, progress and stop to Jellyfin.
     pub fn tick(&mut self) {
+        if self.reap_player() {
+            self.info("MPV ENDED - PLAYBACK STOPPED");
+        }
         self.load_more();
         self.tick_media();
         if self.client.cfg.token.is_empty() {
@@ -262,7 +265,8 @@ impl App {
                     index: s.index,
                     id,
                     last_sent,
-                    last_pos: s.pos,
+                    // mpv reports time-pos as null while a file unloads; keep the last real position.
+                    last_pos: if s.pos > 0.0 { s.pos } else { o.last_pos },
                     paused: s.paused,
                 });
             }
@@ -472,7 +476,18 @@ impl App {
 
     // ---- playback ----------------------------------------------------------
 
+    /// Drop a player whose mpv process has exited, so the next play starts a fresh one.
+    fn reap_player(&mut self) -> bool {
+        let dead = self.player.as_mut().is_some_and(|p| !p.alive());
+        if dead {
+            self.player = None;
+            self.queue.clear();
+        }
+        dead
+    }
+
     fn ensure_player(&mut self) -> bool {
+        self.reap_player();
         if self.player.is_none() {
             match Player::spawn(self.client.cfg.insecure) {
                 Ok(p) => self.player = Some(p),
